@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FF Survey · Full Pipeline</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700&family=JetBrains+Mono:wght@400;500&family=Lato:wght@300;400;700&display=swap');
+
+:root {
+  --bg: #0f0f11;
+  --surface: #17171b;
+  --surface2: #1e1e24;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --text: #e8e6e1;
+  --muted: #6b6880;
+  --accent: #7c6af7;
+  --accent2: #f0c142;
+  --green: #4ade80;
+  --red: #f87171;
+  --orange: #fb923c;
+  --c1: #7c6af7; --c2: #f0c142; --c3: #4ade80;
+  --c4: #f87171; --c5: #38bdf8; --c6: #fb923c;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Lato', sans-serif; min-height: 100vh; }
+
+/* ── Header ── */
+.header { padding: 2rem 2.5rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; gap: 16px; }
+.header h1 { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+.header .sub { font-size: 13px; color: var(--muted); }
+.pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; background: var(--accent); color: white; font-family: 'JetBrains Mono', monospace; }
+
+/* ── Tabs ── */
+.tabs { display: flex; gap: 2px; padding: 1rem 2.5rem 0; border-bottom: 1px solid var(--border); }
+.tab { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 500; padding: 8px 18px; border-radius: 8px 8px 0 0; cursor: pointer; color: var(--muted); border: 1px solid transparent; border-bottom: none; transition: all .15s; }
+.tab.active { background: var(--surface); color: var(--text); border-color: var(--border); }
+.tab:hover:not(.active) { color: var(--text); }
+
+/* ── Panels ── */
+.tab-panel { display: none; padding: 2rem 2.5rem; }
+.tab-panel.active { display: block; }
+
+/* ── Cards ── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 16px; }
+.card-title { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }
+
+/* ── Slider ── */
+.slider-row { display: flex; align-items: center; gap: 20px; }
+.big-r { font-family: 'JetBrains Mono', monospace; font-size: 52px; font-weight: 500; color: var(--accent); min-width: 90px; text-align: right; line-height: 1; }
+.slider-col { flex: 1; }
+input[type=range] { width: 100%; height: 4px; -webkit-appearance: none; appearance: none; border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range]#rSlider { background: linear-gradient(to right, var(--green) 0%, var(--accent2) 50%, var(--red) 100%); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--text); border: 3px solid var(--accent); cursor: pointer; }
+.r-desc { font-size: 12px; color: var(--muted); margin-top: 8px; font-style: italic; }
+.r-scale { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+
+/* ── N buttons ── */
+.n-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.n-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 16px; font-size: 13px; cursor: pointer; color: var(--muted); font-family: 'Lato', sans-serif; transition: all .15s; }
+.n-btn.active { background: var(--accent); border-color: var(--accent); color: white; font-weight: 700; }
+
+/* ── Charts grid ── */
+.charts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.chart-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.chart-card-title { font-size: 10px; color: var(--muted); margin-bottom: 6px; font-family: 'JetBrains Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+canvas { width: 100% !important; height: 130px !important; }
+
+/* ── Stats ── */
+.stats-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 8px; }
+.stat-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; }
+.stat-id { font-size: 10px; color: var(--muted); margin-bottom: 4px; font-family: 'JetBrains Mono', monospace; }
+.stat-r2 { font-size: 16px; font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+.hi { color: var(--green); } .mid { color: var(--accent2); } .lo { color: var(--red); }
+
+/* ── Action buttons ── */
+.action-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-primary { flex: 1; padding: 14px; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; font-family: 'Syne', sans-serif; cursor: pointer; transition: opacity .15s; letter-spacing: .02em; }
+.btn-primary:hover { opacity: .85; }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+.btn-secondary { flex: 1; padding: 14px; background: transparent; color: var(--text); border: 1px solid var(--border2); border-radius: 10px; font-size: 14px; font-weight: 500; font-family: 'Syne', sans-serif; cursor: pointer; transition: all .15s; }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+.btn-secondary:disabled { opacity: .4; cursor: not-allowed; }
+.status-msg { font-size: 12px; color: var(--muted); text-align: center; margin-top: 8px; min-height: 18px; font-family: 'JetBrains Mono', monospace; }
+
+/* ── Results section ── */
+.results-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-bottom: 16px; }
+.result-chart-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.result-chart-title { font-size: 11px; color: var(--muted); margin-bottom: 4px; font-family: 'JetBrains Mono', monospace; }
+.result-formula { font-size: 12px; color: var(--accent); margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; }
+canvas.result-canvas { width: 100% !important; height: 160px !important; }
+
+/* ── Summary table ── */
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead th { text-align: left; padding: 8px 12px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--border); font-family: 'Syne', sans-serif; font-weight: 700; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+tbody tr:hover { background: var(--surface2); }
+td { padding: 9px 12px; color: var(--text); vertical-align: middle; }
+.mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; }
+
+/* ── Export buttons ── */
+.export-row { display: flex; gap: 10px; margin-top: 16px; }
+.export-btn { display: flex; align-items: center; gap: 8px; padding: 10px 18px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; color: var(--text); font-size: 13px; cursor: pointer; font-family: 'Lato', sans-serif; transition: all .15s; text-decoration: none; }
+.export-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Progress ── */
+.progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width .3s; }
+
+/* ── Formula chips ── */
+.formula-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.f-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
+.f-chip.updated { border-color: var(--green); }
+.f-case { font-size: 10px; color: var(--muted); margin-bottom: 3px; }
+.f-formula { font-size: 11px; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+.f-chip.updated .f-formula { color: var(--green); }
+
+.empty-state { text-align: center; padding: 3rem; color: var(--muted); font-size: 14px; }
+.empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>FF Survey</h1>
+  <span class="sub">Full Pipeline · Simulación → Best Fit → Exportar</span>
+  <span class="pill">v2</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('sim')">① Simular datos</div>
+  <div class="tab" onclick="showTab('fit')" id="tabFit">② Best Fit</div>
+  <div class="tab" onclick="showTab('export')" id="tabExport">③ Exportar</div>
+</div>
+
+<!-- ══════════ TAB 1: SIMULADOR ══════════ -->
+<div class="tab-panel active" id="panel-sim">
+
+  <div class="card">
+    <div class="card-title">Parámetro de ruido — r</div>
+    <div class="slider-row">
+      <div class="slider-col">
+        <input type="range" id="rSlider" min="0" max="1" step="0.01" value="0.20" oninput="onR(this.value)">
+        <div class="r-scale"><span>0 · perfecto</span><span>0.5 · moderado</span><span>1 · muy ruidoso</span></div>
+        <div class="r-desc" id="rDesc">Datos ajustados — bajo ruido</div>
+      </div>
+      <div class="big-r" id="rVal">0.20</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Número de respuestas N</div>
+    <div class="n-btns">
+      <button class="n-btn active" onclick="setN(50,this)">50</button>
+      <button class="n-btn" onclick="setN(100,this)">100</button>
+      <button class="n-btn" onclick="setN(200,this)">200</button>
+      <button class="n-btn" onclick="setN(500,this)">500</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Modelos base</div>
+    <div class="formula-grid">
+      <div class="f-chip"><div class="f-case">#1 Congestion → Active trips</div><div class="f-formula">y = ax² + bx + c</div></div>
+      <div class="f-chip"><div class="f-case">#2 Active trips → Enjoyment</div><div class="f-formula">y = ax + b</div></div>
+      <div class="f-chip"><div class="f-case">#3 Enjoyment → Opp. cost</div><div class="f-formula">y = L/(1+eᵏ⁽ˣ⁻ˣ⁰⁾)</div></div>
+      <div class="f-chip"><div class="f-case">#4 Opp. cost → Alt. modal</div><div class="f-formula">y = ax² + bx + c</div></div>
+      <div class="f-chip updated"><div class="f-case">#5 Alt. modal → Car trips ✦</div><div class="f-formula">y = L/(1+eᵏ⁽ˣ⁻ˣ⁰⁾)</div></div>
+      <div class="f-chip"><div class="f-case">#6 Car trips → Bus congestion</div><div class="f-formula">y = ax + b</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Vista previa — dispersión</div>
+    <div class="charts-grid" id="previewGrid"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">R² esperado</div>
+    <div class="stats-grid" id="statsGrid"></div>
+  </div>
+
+  <div class="card">
+    <div class="action-row">
+      <button class="btn-primary" id="btnSim" onclick="runSimAndFit()">
+        ▶ Simular &amp; calcular best fit
+      </button>
+      <button class="btn-secondary" id="btnXlsx" onclick="downloadXlsx()" disabled>
+        ⬇ Descargar .xlsx
+      </button>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="status-msg" id="simStatus"></div>
+  </div>
+</div>
+
+<!-- ══════════ TAB 2: BEST FIT ══════════ -->
+<div class="tab-panel" id="panel-fit">
+  <div id="fitEmpty" class="empty-state">
+    <div class="icon">📐</div>
+    <div>Ejecuta la simulación primero para ver los resultados del best fit</div>
+  </div>
+  <div id="fitContent" style="display:none">
+    <div class="results-grid" id="resultsGrid"></div>
+    <div class="card">
+      <div class="card-title">Resumen — parámetros óptimos</div>
+      <table id="summaryTable">
+        <thead><tr>
+          <th>Caso</th><th>X → Y</th><th>Modelo</th><th>Fórmula</th>
+          <th>Parámetros</th><th>R²</th><th>RMSE</th><th>AIC</th>
+        </tr></thead>
+        <tbody id="summaryBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB 3: EXPORTAR ══════════ -->
+<div class="tab-panel" id="panel-export">
+  <div id="exportEmpty" class="empty-state">
+    <div class="icon">📥</div>
+    <div>Ejecuta la simulación primero para habilitar la exportación</div>
+  </div>
+  <div id="exportContent" style="display:none">
+    <div class="card">
+      <div class="card-title">Archivos disponibles</div>
+      <div class="export-row">
+        <a class="export-btn" id="dlXlsx" href="#" onclick="downloadXlsx();return false;">
+          <span>📊</span> FF_Survey_simulated_N<span id="xlsxLabel">—</span>.xlsx
+        </a>
+        <a class="export-btn" id="dlCsv" href="#" onclick="downloadCsv();return false;">
+          <span>📄</span> ff_bestfit_summary.csv
+        </a>
+        <a class="export-btn" id="dlPng" href="#" onclick="downloadPng();return false;">
+          <span>🖼</span> ff_bestfit_results.png
+        </a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Vista previa — ff_bestfit_results.png</div>
+      <canvas id="exportCanvas" style="width:100%;border-radius:8px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════════
+// DATOS Y MODELOS
+// ══════════════════════════════════════════════════════════════
+const CASES = [
+  {id:1,label:'#1 Congestion→ActiveTrips',xl:'Congestion',yl:'Active transport trips',
+   model:'poly',p:{a:-52.976,b:92.738,c:35.600},color:'#7c6af7',
+   cols:['S1_Congestion_vs_ActiveTransport_Case1','S1_Congestion_vs_ActiveTransport_Case2',
+         'S1_Congestion_vs_ActiveTransport_Case3','S1_Congestion_vs_ActiveTransport_Case4',
+         'S1_Congestion_vs_ActiveTransport_Case5']},
+  {id:2,label:'#2 ActiveTrips→Enjoyment',xl:'Active transport trips',yl:'Journey enjoyment',
+   model:'linear',p:{a:17.083,b:57.250},color:'#f0c142',
+   cols:['S2_ActiveTrips_vs_JourneyEnjoyment_Case1','S2_ActiveTrips_vs_JourneyEnjoyment_Case2']},
+  {id:3,label:'#3 Enjoyment→OppCost',xl:'Journey enjoyment',yl:'Opp. cost of travel time',
+   model:'sigmoid',p:{L:88.833,k:4.162,x0:0.893},color:'#4ade80',
+   cols:['S3_JourneyEnjoyment_vs_TimeImportance_Case1','S3_JourneyEnjoyment_vs_TimeImportance_Case2',
+         'S3_JourneyEnjoyment_vs_TimeImportance_Case3','S3_JourneyEnjoyment_vs_TimeImportance_Case4',
+         'S3_JourneyEnjoyment_vs_TimeImportance_Case5']},
+  {id:4,label:'#4 OppCost→AltModal',xl:'Opp. cost of travel time',yl:'Alternative modal choices',
+   model:'poly',p:{a:-101.190,b:92.095,c:55.667},color:'#f87171',
+   cols:['S4_TimeImportance_vs_AltModalChoices_Case1','S4_TimeImportance_vs_AltModalChoices_Case2',
+         'S4_TimeImportance_vs_AltModalChoices_Case3','S4_TimeImportance_vs_AltModalChoices_Case4',
+         'S4_TimeImportance_vs_AltModalChoices_Case5']},
+  {id:5,label:'#5 AltModal→CarTrips ✦',xl:'Alternative modal choices',yl:'Car trips',
+   model:'sigmoid',p:{L:90,k:6,x0:0.55},color:'#38bdf8',
+   cols:['S5_AltModalChoices_vs_CarTrips_Case1','S5_AltModalChoices_vs_CarTrips_Case2',
+         'S5_AltModalChoices_vs_CarTrips_Case3','S5_AltModalChoices_vs_CarTrips_Case4']},
+  {id:6,label:'#6 CarTrips→BusCong',xl:'Car trips',yl:'Perception of bus congestion',
+   model:'linear',p:{a:53.333,b:44.000},color:'#fb923c',
+   cols:['S6_CarTrips_vs_BusUse_Case1','S6_CarTrips_vs_BusUse_Case2']},
+];
+
+const MODEL_NAMES = {poly:'Polinomial',linear:'Lineal',sigmoid:'Sigmoide inv.'};
+const MODEL_FORMULA = {poly:'y=ax²+bx+c',linear:'y=ax+b',sigmoid:'y=L/(1+eᵏ⁽ˣ⁻ˣ⁰⁾)'};
+
+function predict(model,p,x){
+  if(model==='linear')  return p.a*x+p.b;
+  if(model==='poly')    return p.a*x*x+p.b*x+p.c;
+  if(model==='sigmoid') return p.L/(1+Math.exp(p.k*(x-p.x0)));
+  return 0;
+}
+
+// ══════════════════════════════════════════════════════════════
+// RNG / SIMULACIÓN
+// ══════════════════════════════════════════════════════════════
+let seed=42;
+function rand(){seed^=seed<<13;seed^=seed>>17;seed^=seed<<5;return(seed>>>0)/4294967296;}
+function randn(){let u=0,v=0;while(!u)u=rand();while(!v)v=rand();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function resetSeed(s){seed=s||42;}
+
+let r=0.20, N=50;
+let simRows=null, fitResults=null;
+
+function simulateDataset(rVal,n){
+  resetSeed(1234);
+  const rows=Array.from({length:n},(_,i)=>({
+    ResponseId:`SIM_${String(i+1).padStart(4,'0')}`,
+    SubmittedAtUTC:'',ParticipantId:'',Email:'',City:'',Country:''
+  }));
+  CASES.forEach(c=>{
+    const xs=Array.from({length:c.cols.length},(_,i)=>0.2+i*(0.8/(c.cols.length-1)));
+    xs.forEach((x,ci)=>{
+      const yT=predict(c.model,c.p,x), sigma=rVal*30;
+      Array.from({length:n},()=>Math.round(Math.min(100,Math.max(0,yT+sigma*randn()))))
+        .forEach((v,ri)=>{rows[ri][c.cols[ci]]=v;});
+    });
+  });
+  rows.forEach(row=>{row.Comments='';});
+  return rows;
+}
+
+// ══════════════════════════════════════════════════════════════
+// BEST FIT (Levenberg-Marquardt simple — gradient descent)
+// ══════════════════════════════════════════════════════════════
+function fitModel(model,xs,ys){
+  // Numerical curve fitting via simple gradient descent + LM
+  const models = {
+    poly:    {fn:(p,x)=>p[0]*x*x+p[1]*x+p[2], p0:[1,1,0]},
+    linear:  {fn:(p,x)=>p[0]*x+p[1],            p0:[1,0]},
+    sigmoid: {fn:(p,x)=>p[0]/(1+Math.exp(p[1]*(x-p[2]))), p0:[90,5,0.5]},
+  };
+  const {fn,p0} = models[model];
+  let p=[...p0], lr=0.001, prevLoss=Infinity;
+
+  for(let iter=0;iter<8000;iter++){
+    // Compute gradients numerically
+    const loss=()=>xs.reduce((s,x,i)=>{const e=fn(p,x)-ys[i];return s+e*e;},0);
+    const L=loss();
+    if(Math.abs(L-prevLoss)<1e-10) break;
+    prevLoss=L;
+    const grad=p.map((_,j)=>{
+      const h=1e-5, pp=[...p]; pp[j]+=h;
+      const tmp=p[j]; p[j]=pp[j];
+      const Lp=loss(); p[j]=tmp;
+      return(Lp-L)/h;
+    });
+    p=p.map((v,j)=>v-lr*grad[j]);
+    if(iter%500===0) lr*=0.9;
+  }
+  const yPred=xs.map(x=>fn(p,x));
+  const yMean=ys.reduce((a,b)=>a+b,0)/ys.length;
+  const ssRes=ys.reduce((s,y,i)=>s+(y-yPred[i])**2,0);
+  const ssTot=ys.reduce((s,y)=>s+(y-yMean)**2,0);
+  const r2=ssTot>0?Math.max(0,1-ssRes/ssTot):0;
+  const rmse=Math.sqrt(ssRes/ys.length);
+  const k=p.length, n=ys.length;
+  let aic='—';
+  if(n>k){const s2=ssRes/(n-k);if(s2>0){const ll=-n/2*Math.log(2*Math.PI*s2)-ssRes/(2*s2);aic=(2*k-2*ll).toFixed(2);}}
+  return {p, r2, rmse, aic, yPred};
+}
+
+function computeFits(rows){
+  return CASES.map(c=>{
+    const xs=Array.from({length:c.cols.length},(_,i)=>0.2+i*(0.8/(c.cols.length-1)));
+    const data=c.cols.map(col=>{
+      const vals=rows.map(r=>parseFloat(r[col])||0);
+      return vals.reduce((a,b)=>a+b,0)/vals.length;
+    });
+    const fit=fitModel(c.model,xs,data);
+    let pStr='';
+    if(c.model==='poly')    pStr=`a=${fit.p[0].toFixed(3)}, b=${fit.p[1].toFixed(3)}, c=${fit.p[2].toFixed(3)}`;
+    if(c.model==='linear')  pStr=`a=${fit.p[0].toFixed(3)}, b=${fit.p[1].toFixed(3)}`;
+    if(c.model==='sigmoid') pStr=`L=${fit.p[0].toFixed(3)}, k=${fit.p[1].toFixed(3)}, x₀=${fit.p[2].toFixed(3)}`;
+    return {...fit, xs, ys:data, case:c, pStr};
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// PREVIEW CHARTS
+// ══════════════════════════════════════════════════════════════
+let previewCharts=[];
+function buildPreview(){
+  const grid=document.getElementById('previewGrid');
+  grid.innerHTML=''; previewCharts=[];
+  CASES.forEach(c=>{
+    const d=document.createElement('div'); d.className='chart-card';
+    d.innerHTML=`<div class="chart-card-title">${c.label}</div><canvas id="pv${c.id}"></canvas>`;
+    grid.appendChild(d);
+    const ch=new Chart(document.getElementById('pv'+c.id).getContext('2d'),{
+      type:'scatter',
+      data:{datasets:[
+        {data:[],backgroundColor:c.color+'55',pointRadius:2},
+        {data:[],type:'line',borderColor:c.color,borderWidth:2,pointRadius:0,fill:false}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{min:0.1,max:1.1,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#6b6880',font:{size:9}}},
+                y:{min:0,max:110,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#6b6880',font:{size:9}}}},
+        animation:{duration:120}}
+    });
+    previewCharts.push({ch,case:c});
+  });
+}
+
+function updatePreview(rVal){
+  resetSeed(42);
+  previewCharts.forEach(({ch,case:c})=>{
+    const xs=Array.from({length:c.cols.length},(_,i)=>0.2+i*(0.8/(c.cols.length-1)));
+    const scatter=[];
+    xs.forEach(x=>{
+      const sigma=rVal*30;
+      Array.from({length:50},()=>Math.round(Math.min(100,Math.max(0,predict(c.model,c.p,x)+sigma*randn()))))
+        .forEach(v=>scatter.push({x,y:v}));
+    });
+    ch.data.datasets[0].data=scatter;
+    const curve=[];
+    for(let x=0.15;x<=1.05;x+=0.015)
+      curve.push({x:+x.toFixed(3),y:+Math.max(0,Math.min(100,predict(c.model,c.p,x))).toFixed(2)});
+    ch.data.datasets[1].data=curve;
+    ch.update('none');
+  });
+}
+
+function updateStats(rVal){
+  resetSeed(99);
+  const grid=document.getElementById('statsGrid'); grid.innerHTML='';
+  CASES.forEach(c=>{
+    const n=200, xs=Array.from({length:c.cols.length},(_,i)=>0.2+i*(0.8/(c.cols.length-1)));
+    let ssR=0,ssT=0,allY=[];
+    xs.forEach(x=>{const s=rVal*30;for(let i=0;i<n;i++)allY.push(predict(c.model,c.p,x)+s*randn());});
+    const truths=xs.flatMap(x=>Array(n).fill(predict(c.model,c.p,x)));
+    const mean=allY.reduce((a,b)=>a+b,0)/allY.length;
+    allY.forEach((y,i)=>{ssR+=(y-truths[i])**2;ssT+=(y-mean)**2;});
+    const r2=Math.max(0,1-ssR/ssT);
+    const cls=r2>0.85?'hi':r2>0.6?'mid':'lo';
+    const box=document.createElement('div'); box.className='stat-box';
+    box.innerHTML=`<div class="stat-id">#${c.id}</div><div class="stat-r2 ${cls}">${r2.toFixed(3)}</div>`;
+    grid.appendChild(box);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// RUN FULL PIPELINE
+// ══════════════════════════════════════════════════════════════
+let resultCharts=[];
+async function runSimAndFit(){
+  const btn=document.getElementById('btnSim');
+  const status=document.getElementById('simStatus');
+  const prog=document.getElementById('progressFill');
+  btn.disabled=true;
+
+  status.textContent='Simulando datos...'; prog.style.width='20%';
+  await sleep(30);
+  simRows=simulateDataset(r,N);
+
+  status.textContent='Calculando best fit...'; prog.style.width='55%';
+  await sleep(30);
+  fitResults=computeFits(simRows);
+
+  status.textContent='Renderizando gráficas...'; prog.style.width='80%';
+  await sleep(30);
+  renderFitResults();
+  renderSummaryTable();
+  renderExportCanvas();
+
+  prog.style.width='100%';
+  status.textContent=`✅ Listo — N=${N}, r=${r.toFixed(2)}`;
+  btn.disabled=false;
+
+  document.getElementById('btnXlsx').disabled=false;
+  document.getElementById('tabFit').style.color='';
+  document.getElementById('tabExport').style.color='';
+  document.getElementById('xlsxLabel').textContent=`${N}_r${r.toFixed(2).replace('.','')}_v2`;
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function renderFitResults(){
+  document.getElementById('fitEmpty').style.display='none';
+  document.getElementById('fitContent').style.display='block';
+
+  // Destroy old charts
+  resultCharts.forEach(ch=>ch.destroy()); resultCharts=[];
+
+  const grid=document.getElementById('resultsGrid'); grid.innerHTML='';
+  fitResults.forEach(res=>{
+    const c=res.case;
+    const card=document.createElement('div'); card.className='result-chart-card';
+    card.innerHTML=`
+      <div class="result-chart-title">${c.label}</div>
+      <div class="result-formula">${MODEL_FORMULA[c.model]} &nbsp;·&nbsp; R²=${res.r2.toFixed(4)}</div>
+      <canvas id="rc${c.id}" class="result-canvas"></canvas>`;
+    grid.appendChild(card);
+
+    const xSmooth=Array.from({length:80},(_,i)=>0.15+i*0.012);
+    const ySmooth=xSmooth.map(x=>Math.max(0,Math.min(100,fitModel(c.model,res.xs,res.ys).p.reduce?
+      (()=>{const f=fitModel(c.model,res.xs,res.ys);return({poly:(p,x)=>p[0]*x*x+p[1]*x+p[2],linear:(p,x)=>p[0]*x+p[1],sigmoid:(p,x)=>p[0]/(1+Math.exp(p[1]*(x-p[2])))})[c.model](f.p,x)})():predict(c.model,c.p,x))));
+
+    // Use fitted params
+    const fp=res.p;
+    const fn={poly:(x)=>fp[0]*x*x+fp[1]*x+fp[2],linear:(x)=>fp[0]*x+fp[1],sigmoid:(x)=>fp[0]/(1+Math.exp(fp[1]*(x-fp[2])))}[c.model];
+    const curvePts=Array.from({length:80},(_,i)=>{const x=0.15+i*0.012;return{x:+x.toFixed(3),y:+Math.max(0,Math.min(110,fn(x))).toFixed(2)};});
+
+    // Raw scatter (means per column)
+    const scatterPts=res.xs.map((x,i)=>({x,y:res.ys[i]}));
+
+    const ch=new Chart(document.getElementById('rc'+c.id).getContext('2d'),{
+      type:'scatter',
+      data:{datasets:[
+        {label:'media',data:scatterPts,backgroundColor:c.color,pointRadius:6,pointBorderColor:'#0f0f11',pointBorderWidth:2},
+        {label:'fit',data:curvePts,type:'line',borderColor:c.color,borderWidth:2.5,pointRadius:0,fill:false}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{min:0.1,max:1.1,title:{display:true,text:c.xl,color:'#6b6880',font:{size:10}},
+                    grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#6b6880',font:{size:9}}},
+                y:{min:0,max:110,title:{display:true,text:c.yl,color:'#6b6880',font:{size:10}},
+                    grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#6b6880',font:{size:9}}}}}
+    });
+    resultCharts.push(ch);
+  });
+}
+
+function renderSummaryTable(){
+  const tbody=document.getElementById('summaryBody'); tbody.innerHTML='';
+  const badgeColors={poly:'#7c6af7',linear:'#f0c142',sigmoid:'#4ade80'};
+  fitResults.forEach(res=>{
+    const c=res.case;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="mono">#${c.id}</td>
+      <td style="font-size:11px;color:#a09cb8">${c.xl}<br><span style="color:#6b6880">→ ${c.yl}</span></td>
+      <td><span class="badge" style="background:${badgeColors[c.model]}22;color:${badgeColors[c.model]};border:1px solid ${badgeColors[c.model]}44">${MODEL_NAMES[c.model]}</span></td>
+      <td class="mono">${MODEL_FORMULA[c.model]}</td>
+      <td class="mono" style="font-size:10px;color:#a09cb8">${res.pStr}</td>
+      <td class="mono ${res.r2>0.85?'hi':res.r2>0.6?'mid':'lo'}">${res.r2.toFixed(4)}</td>
+      <td class="mono">${res.rmse.toFixed(3)}</td>
+      <td class="mono">${res.aic}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// EXPORT CANVAS (static PNG preview)
+// ══════════════════════════════════════════════════════════════
+function renderExportCanvas(){
+  document.getElementById('exportEmpty').style.display='none';
+  document.getElementById('exportContent').style.display='block';
+
+  const canvas=document.getElementById('exportCanvas');
+  const W=900, H=560, cols=3, rows=2, pw=(W-80)/cols, ph=(H-60)/rows;
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#0f0f11'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#e8e6e1'; ctx.font='bold 14px Syne,sans-serif';
+  ctx.fillText(`FF Survey · Best Fit Results · N=${N} · r=${r.toFixed(2)}`,24,22);
+
+  fitResults.forEach((res,idx)=>{
+    const col=idx%cols, row=Math.floor(idx/cols);
+    const ox=col*pw+20, oy=row*ph+40;
+    const c=res.case;
+    const fp=res.p;
+    const fn={poly:(x)=>fp[0]*x*x+fp[1]*x+fp[2],linear:(x)=>fp[0]*x+fp[1],sigmoid:(x)=>fp[0]/(1+Math.exp(fp[1]*(x-fp[2])))}[c.model];
+
+    // Panel bg
+    ctx.fillStyle='#17171b'; roundRect(ctx,ox,oy,pw-10,ph-10,8); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=1; roundRect(ctx,ox,oy,pw-10,ph-10,8); ctx.stroke();
+
+    // Title
+    ctx.fillStyle=c.color; ctx.font='11px JetBrains Mono,monospace';
+    ctx.fillText(c.label,ox+10,oy+18);
+    ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='10px JetBrains Mono,monospace';
+    ctx.fillText(`${MODEL_FORMULA[c.model]}  R²=${res.r2.toFixed(3)}`,ox+10,oy+32);
+
+    // Axes
+    const mx=ox+18, my=oy+ph-30, aw=pw-46, ah=ph-52;
+    ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=0.5;
+    ctx.beginPath(); ctx.moveTo(mx,oy+36); ctx.lineTo(mx,my); ctx.lineTo(mx+aw,my); ctx.stroke();
+
+    // Grid lines
+    [0.25,0.5,0.75,1].forEach(t=>{
+      ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=0.5;
+      const gx=mx+t*aw; ctx.beginPath(); ctx.moveTo(gx,oy+36); ctx.lineTo(gx,my); ctx.stroke();
+      const gy=my-t*ah; ctx.beginPath(); ctx.moveTo(mx,gy); ctx.lineTo(mx+aw,gy); ctx.stroke();
+    });
+
+    function toCanvas(x,y){
+      return[mx+(x-0.15)/(1.05-0.15)*aw, my-(y/110)*ah];
+    }
+
+    // Fit curve
+    ctx.strokeStyle=c.color; ctx.lineWidth=2; ctx.beginPath();
+    let first=true;
+    for(let x=0.15;x<=1.05;x+=0.01){
+      const y=Math.max(0,Math.min(110,fn(x)));
+      const [cx,cy]=toCanvas(x,y);
+      if(first){ctx.moveTo(cx,cy);first=false;}else ctx.lineTo(cx,cy);
+    }
+    ctx.stroke();
+
+    // Data points
+    res.xs.forEach((x,i)=>{
+      const [cx,cy]=toCanvas(x,res.ys[i]);
+      ctx.fillStyle=c.color;
+      ctx.beginPath(); ctx.arc(cx,cy,4,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='#0f0f11'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(cx,cy,4,0,Math.PI*2); ctx.stroke();
+    });
+  });
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);
+  ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();
+}
+
+// ══════════════════════════════════════════════════════════════
+// DOWNLOADS
+// ══════════════════════════════════════════════════════════════
+function downloadXlsx(){
+  if(!simRows) return;
+  const ALL_COLS=['ResponseId','SubmittedAtUTC','ParticipantId','Email','City','Country',
+    ...CASES.flatMap(c=>c.cols),'Comments'];
+  const wsData=[ALL_COLS,...simRows.map(row=>ALL_COLS.map(col=>row[col]??''))];
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols']=ALL_COLS.map(c=>({wch:Math.max(c.length,10)}));
+  XLSX.utils.book_append_sheet(wb,ws,'Responses');
+  XLSX.writeFile(wb,`FF_Survey_simulated_N${N}_r${r.toFixed(2).replace('.','')}_v2.xlsx`);
+}
+
+function downloadCsv(){
+  if(!fitResults) return;
+  const headers=['Caso','X','Y','Modelo','Formula','R2','RMSE','AIC','Parametros'];
+  const rows=fitResults.map(res=>[
+    `#${res.case.id}`,res.case.xl,res.case.yl,
+    MODEL_NAMES[res.case.model],MODEL_FORMULA[res.case.model],
+    res.r2.toFixed(4),res.rmse.toFixed(4),res.aic,res.pStr
+  ]);
+  const csv=[headers,...rows].map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`ff_bestfit_summary_N${N}_r${r.toFixed(2).replace('.','')}.csv`;
+  a.click();
+}
+
+function downloadPng(){
+  const canvas=document.getElementById('exportCanvas');
+  const a=document.createElement('a');
+  a.href=canvas.toDataURL('image/png');
+  a.download=`ff_bestfit_results_N${N}_r${r.toFixed(2).replace('.','')}.png`;
+  a.click();
+}
+
+// ══════════════════════════════════════════════════════════════
+// UI CONTROLS
+// ══════════════════════════════════════════════════════════════
+function onR(v){
+  r=parseFloat(v);
+  document.getElementById('rVal').textContent=r.toFixed(2);
+  const descs=[[0,.15,'Datos perfectos — casi sin ruido'],[.15,.35,'Datos ajustados — bajo ruido'],
+    [.35,.55,'Dispersión moderada'],[.55,.75,'Alta variabilidad — ruido fuerte'],[.75,1.01,'Datos muy ruidosos']];
+  const d=descs.find(([lo,hi])=>r>=lo&&r<hi);
+  document.getElementById('rDesc').textContent=d?d[2]:'';
+  updatePreview(r); updateStats(r);
+}
+
+function setN(n,btn){
+  N=n;
+  document.querySelectorAll('.n-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function showTab(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  const idx={sim:0,fit:1,export:2}[id];
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  document.getElementById('panel-'+id).classList.add('active');
+}
+
+// ── Init ──
+buildPreview();
+onR(0.20);
+</script>
+</body>
+</html>
